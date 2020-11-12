@@ -6,6 +6,8 @@ import { LessonModule } from './lesson/lesson.module';
 import { TasksModule } from './tasks/tasks.module';
 import { AuthModule } from './auth/auth.module';
 import { StudentModule } from './student/student.module';
+import { PubSub } from 'graphql-subscriptions';
+import { PubSubModule } from './pub-sub/pub-sub.module';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { StudentModule } from './student/student.module';
     TasksModule,
     AuthModule,
     StudentModule,
+    PubSubModule,
   ]
 })
 export class AppModule {}

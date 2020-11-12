@@ -1,17 +1,19 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Inject, ValidationPipe } from '@nestjs/common';
 import { Args, Mutation, Resolver, Query, Subscription, Int, ResolveProperty } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
-import { Lesson } from 'src/lesson/lesson.entity';
 import { CreateStudentInput } from './input/create-student.input';
 import { UpdateStudentInput } from './input/update-student.input';
 import { Student } from './student.entity';
 import { StudentService } from './student.service';
 import { StudentType } from './student.type';
 
-const pubSub = new PubSub();
 @Resolver((type) => StudentType)
 export class StudentResolver {
-  constructor(private studentService: StudentService) {}
+  constructor(
+    private studentService: StudentService,
+    @Inject("PUB_SUB")
+    private pubSub: PubSub
+  ) {}
 
   @Query((returns) => [StudentType])
   getStudents(): Promise<Student[]> {
@@ -40,12 +42,25 @@ export class StudentResolver {
       studentId,
       updateStudentInput,
     );
-    pubSub.publish('onChangeStudent', { onChangeStudent: result });
+    /** The property name of data return ({ onChangStudent }) need to equals Subscription's name */
+    this.pubSub.publish('onChangeStudent', { onChangeStudent: result });
     return result;
   }
 
-  @Subscription((returns) => StudentType, { name: 'onChangeStudent' })
-  onChangeStudent() {
-    return pubSub.asyncIterator('onChangeStudent');
+  @Subscription((returns) => StudentType, { 
+    name: 'onChangeStudent',
+    /** To filter out specific events */
+    async filter(this: StudentResolver, payload, variables){
+      /** variables is the args that inputed into the Subscription */
+      return payload.onChangeStudent.id === variables.studentId
+    },
+    /** Mutating subscription payloads */
+    resolve(this: StudentResolver, value) {
+      /** "this" refers to an instance of "StudentResolver" */
+      return value.onChangeStudent;
+    }
+  })
+  onChangeStudent(@Args('studentId', {type: () => Int}) studentId: number) {
+    return this.pubSub.asyncIterator('onChangeStudent');
   }
 }
