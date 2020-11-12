@@ -13,6 +13,7 @@ import { StudentModule } from './student/student.module';
     GraphQLModule.forRoot({
       // autoSchemaFile: 'schema.gql',
       autoSchemaFile: true,
+      installSubscriptionHandlers: true,
     }),
     LessonModule,
     StudentModule,
